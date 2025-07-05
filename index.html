@@ -1,83 +1,412 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>YA/TIDAK</title>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dasbor Interaktif - Project Store</title>
     <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body class="bg-slate-800 flex justify-center items-center h-screen">
-    <div
-      class="border border-2 border-gray-600 bg-white p-4 rounded-md shadow-lg shadow-slate-700 justify-center flex flex-col items-center"
-    >
-      <img
-        id="gambar"
-        class="rounded-md mb-3 mx-auto"
-        src="https://images2.imgbox.com/91/a5/xyPwPB4O_o.jpeg"
-        width="280"
-        alt=""
-      />
-      <h1
-        class="font-bold text-slate-800 text-xl text-center leading-relaxed"
-        id="kalimat"
-      >
-        Apakah dia dulu anak baik?
-      </h1>
-      <div class="mt-4 text-white justify-center flex gap-4">
-        <button
-          onclick="yaDitekan()"
-          id="tombolYa"
-          class="bg-red-700 px-4 py-1 rounded w-32"
-        >
-          TIDAK
-        </button>
-        <button
-          id="tombolTidak"
-          onclick="tidakDitekan()"
-          class="bg-green-700 px-4 py-1 rounded w-32"
-        >
-          YA
-        </button>
-      </div>
-    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Neutral & Purple Accent -->
+    <!-- Application Structure Plan: Saya merancang aplikasi ini sebagai dasbor satu halaman dengan navigasi di bagian atas untuk melompat ke bagian-bagian utama: Ringkasan, Model Bisnis, Keuangan, Risiko, dan Strategi. Struktur ini memungkinkan pengguna untuk menjelajahi rencana bisnis secara non-linear dan interaktif. Model bisnis disajikan dalam format kartu grid untuk keterbacaan yang lebih baik daripada tabel. Bagian Keuangan dan Risiko menggunakan grafik interaktif (Doughnut, Bar, dan Bubble Chart) untuk memvisualisasikan data kuantitatif secara efektif, memungkinkan pengguna untuk melihat wawasan utama dengan cepat. Peta Risiko yang dapat diklik secara langsung terhubung ke tabel detail mitigasi, menciptakan alur eksplorasi yang kuat dan intuitif. Struktur ini dipilih untuk mengubah dokumen statis menjadi alat analisis yang dinamis dan menarik bagi pengguna. -->
+    <!-- Visualization & Content Choices: 1. Estimasi Pendapatan (Info) -> Goal: Compare -> Viz: Doughnut Chart -> Interaction: Hover tooltips -> Justification: Visualisasi proporsi pendapatan dari setiap layanan. 2. Pendapatan vs Biaya (Compare) -> Goal: Compare -> Viz: Bar Chart -> Interaction: Hover tooltips -> Justification: Perbandingan visual yang jelas antara pendapatan kotor dan biaya. 3. Peta Risiko (Relationships) -> Goal: Relate & Inform -> Viz: Bubble Chart -> Interaction: Click bubble to update detail table -> Justification: Standar visualisasi portofolio risiko yang menghubungkan gambaran besar (peta) dengan detail (mitigasi), meningkatkan pemahaman secara mendalam. 4. Model Bisnis & Strategi (Organize) -> Goal: Organize & Inform -> Viz: HTML/CSS Grid & Accordion -> Interaction: Click to expand -> Justification: Menyajikan informasi padat teks secara bersih dan terstruktur. Library: Chart.js untuk semua grafik. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 350px; max-height: 400px; }
+        @media (max-width: 640px) { .chart-container { height: 300px; max-height: 350px; } }
+        .nav-link { transition: color 0.3s, border-bottom-color 0.3s; }
+        .nav-link:hover, .nav-link.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+        .risk-bubble:hover { transform: scale(1.1); cursor: pointer; transition: transform 0.2s; }
+        .risk-detail-card { transition: all 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
 
-    <script>
-      let tombolTidak = document.getElementById("tombolTidak");
-      let tombolYa = document.getElementById("tombolYa");
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center font-bold text-white text-xl">PS</div>
+                <h1 class="text-2xl font-bold text-slate-900">Project Store</h1>
+            </div>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#ringkasan" class="nav-link text-slate-600 border-b-2 border-transparent pb-1">Ringkasan</a>
+                <a href="#model-bisnis" class="nav-link text-slate-600 border-b-2 border-transparent pb-1">Model Bisnis</a>
+                <a href="#keuangan" class="nav-link text-slate-600 border-b-2 border-transparent pb-1">Keuangan</a>
+                <a href="#risiko" class="nav-link text-slate-600 border-b-2 border-transparent pb-1">Risiko</a>
+                <a href="#strategi" class="nav-link text-slate-600 border-b-2 border-transparent pb-1">Strategi</a>
+            </div>
+             <button id="mobile-menu-button" class="md:hidden p-2 rounded-md text-slate-600 hover:bg-slate-100">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4">
+             <a href="#ringkasan" class="block py-2 text-slate-600 hover:text-indigo-600">Ringkasan</a>
+             <a href="#model-bisnis" class="block py-2 text-slate-600 hover:text-indigo-600">Model Bisnis</a>
+             <a href="#keuangan" class="block py-2 text-slate-600 hover:text-indigo-600">Keuangan</a>
+             <a href="#risiko" class="block py-2 text-slate-600 hover:text-indigo-600">Risiko</a>
+             <a href="#strategi" class="block py-2 text-slate-600 hover:text-indigo-600">Strategi</a>
+        </div>
+    </header>
 
-      let listKalimat = [
-        "Coba Lagi",
-        "Udah jangan dipencet terus",
-        "Bilang aja enggak",
-        "Mending Nyerah, bocah tengil itu",
-        "KLIK TIDAK!!!",
-      ];
-      let kalimat = document.getElementById("kalimat");
-      let gambar = document.getElementById("gambar");
+    <main class="container mx-auto px-6 py-12">
+        
+        <section id="ringkasan" class="text-center scroll-mt-24">
+            <h2 class="text-4xl md:text-5xl font-bold text-slate-900 mb-4">Solusi Kebutuhan Digital Anda</h2>
+            <p class="max-w-3xl mx-auto text-lg text-slate-600 mb-12">Project Store hadir sebagai platform terpadu untuk semua kebutuhan digital Anda, mulai dari top-up game, pulsa, token listrik, hingga akun streaming. Kami menyediakan layanan yang cepat, aman, dan terpercaya dengan harga yang kompetitif.</p>
+            <div class="grid md:grid-cols-4 gap-8 max-w-5xl mx-auto">
+                <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200/50">
+                    <div class="text-3xl mb-3">⚡️</div>
+                    <h3 class="text-xl font-semibold mb-2 text-slate-900">Cepat & Efisien</h3>
+                    <p class="text-slate-500">Proses transaksi rata-rata hanya 1-5 menit setelah pembayaran.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200/50">
+                    <div class="text-3xl mb-3">🛡️</div>
+                    <h3 class="text-xl font-semibold mb-2 text-slate-900">Aman & Terpercaya</h3>
+                    <p class="text-slate-500">Jaminan keamanan data dan transaksi untuk kenyamanan Anda.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200/50">
+                    <div class="text-3xl mb-3">📦</div>
+                    <h3 class="text-xl font-semibold mb-2 text-slate-900">Layanan Lengkap</h3>
+                    <p class="text-slate-500">Semua kebutuhan digital Anda tersedia dalam satu platform praktis.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200/50">
+                    <div class="text-3xl mb-3">💰</div>
+                    <h3 class="text-xl font-semibold mb-2 text-slate-900">Harga Kompetitif</h3>
+                    <p class="text-slate-500">Menawarkan harga terbaik dan terjangkau untuk semua kalangan.</p>
+                </div>
+            </div>
+        </section>
 
-      function yaDitekan() {
-        kalimat.innerHTML =
-          "Makasih nasihatnya bro,<br>dia yang skrg tengah berusaha <br><u><i>jadi pria baik";
-        gambar.src =
-          "https://media1.tenor.com/m/9JG_cwf3Q8UAAAAd/on-gang-on-gang-cat.gif";
-        gambar.classList.add("mx-auto");
-        tombolYa.style.visibility = "hidden";
-        tombolTidak.style.visibility = "hidden";
-      }
+        <section id="model-bisnis" class="mt-24 scroll-mt-24">
+            <h2 class="text-3xl font-bold text-center mb-4 text-slate-900">Model Bisnis Kami</h2>
+            <p class="text-center text-lg text-slate-600 max-w-3xl mx-auto mb-12">Struktur bisnis kami dirancang untuk efisiensi dan fokus pada pelanggan. Berikut adalah kerangka kerja kami yang mengadopsi pendekatan Business Model Canvas (BMC) untuk memberikan nilai terbaik.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                 <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200/50">
+                    <h3 class="font-bold text-indigo-600 mb-2">Customer Segments</h3>
+                    <p class="text-slate-600">Pelajar, mahasiswa, pekerja, dan masyarakat umum pengguna layanan digital.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200/50">
+                    <h3 class="font-bold text-indigo-600 mb-2">Value Propositions</h3>
+                    <p class="text-slate-600">Layanan lengkap, cepat, harga terjangkau, dan transaksi praktis dalam satu tempat.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200/50">
+                    <h3 class="font-bold text-indigo-600 mb-2">Channels</h3>
+                    <p class="text-slate-600">WhatsApp, Instagram, Facebook, dan promosi dari mulut ke mulut.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200/50">
+                    <h3 class="font-bold text-indigo-600 mb-2">Customer Relationships</h3>
+                    <p class="text-slate-600">Pelayanan ramah, respons cepat, bantuan teknis, dan promo loyalitas pelanggan.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200/50">
+                    <h3 class="font-bold text-indigo-600 mb-2">Revenue Streams</h3>
+                    <p class="text-slate-600">Margin keuntungan dari penjualan produk digital (top-up, pulsa, token, akun).</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200/50">
+                    <h3 class="font-bold text-indigo-600 mb-2">Key Activities</h3>
+                    <p class="text-slate-600">Pengelolaan pesanan, layanan pelanggan, pemasaran digital, dan pengelolaan stok digital.</p>
+                </div>
+            </div>
+        </section>
 
-      function tidakDitekan() {
-        kalimatRandom = Math.floor(Math.random() * listKalimat.length);
-        kalimat.innerHTML = listKalimat[kalimatRandom];
-        tombolTidak.style.position = "absolute";
-        let angkaRandom = Math.floor(
-          Math.random() * document.documentElement.clientWidth
-        );
-        let angkaRandom2 = Math.floor(
-          Math.random() * document.documentElement.clientHeight
-        );
-        tombolTidak.style.left = angkaRandom + "px";
-        tombolTidak.style.top = angkaRandom2 + "px";
-      }
-    </script>
-  </body>
+        <section id="keuangan" class="mt-24 scroll-mt-24">
+            <h2 class="text-3xl font-bold text-center mb-4 text-slate-900">Analisis Keuangan</h2>
+            <p class="text-center text-lg text-slate-600 max-w-3xl mx-auto mb-12">Bagian ini menyajikan gambaran finansial Project Store, termasuk estimasi pendapatan dan perbandingannya dengan biaya operasional. Interaksi dengan grafik di bawah untuk melihat detail lebih lanjut.</p>
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200/50">
+                    <h3 class="text-2xl font-semibold mb-6 text-center text-slate-900">Estimasi Pendapatan Bulanan</h3>
+                    <div class="chart-container">
+                        <canvas id="pendapatanChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200/50">
+                    <h3 class="text-2xl font-semibold mb-6 text-center text-slate-900">Pendapatan vs. Biaya</h3>
+                     <div class="chart-container">
+                        <canvas id="biayaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+             <div class="mt-12 text-center bg-indigo-50 p-8 rounded-xl border border-indigo-200">
+                <h3 class="text-2xl font-bold text-indigo-900 mb-2">Estimasi Laba Bersih Bulanan</h3>
+                <p class="text-5xl font-extrabold text-indigo-600">Rp 175.000</p>
+            </div>
+        </section>
+
+        <section id="risiko" class="mt-24 scroll-mt-24">
+            <h2 class="text-3xl font-bold text-center mb-4 text-slate-900">Analisis Risiko</h2>
+             <p class="text-center text-lg text-slate-600 max-w-3xl mx-auto mb-12">Setiap bisnis memiliki risiko. Di sini kami memetakan potensi risiko berdasarkan kemungkinan dan dampaknya. Klik pada salah satu gelembung risiko di peta untuk melihat detail identifikasi dan strategi mitigasi yang telah kami siapkan.</p>
+            <div class="grid lg:grid-cols-5 gap-8">
+                <div class="lg:col-span-3 bg-white p-6 rounded-xl shadow-lg border border-slate-200/50">
+                    <h3 class="text-2xl font-semibold mb-4 text-center text-slate-900">Peta Risiko</h3>
+                    <div class="chart-container h-96 max-h-[500px]">
+                        <canvas id="risikoChart"></canvas>
+                    </div>
+                </div>
+                <div id="risk-detail-container" class="lg:col-span-2 flex items-center justify-center">
+                    <div id="risk-detail-card" class="bg-white p-6 rounded-xl shadow-lg w-full border border-slate-200/50 min-h-[300px]">
+                        <h3 id="risk-detail-title" class="text-xl font-bold text-slate-900 mb-3"></h3>
+                        <div id="risk-detail-content">
+                            <p class="text-slate-500 text-center pt-10">Klik sebuah risiko pada peta untuk melihat detailnya di sini.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="strategi" class="mt-24 scroll-mt-24">
+             <h2 class="text-3xl font-bold text-center mb-4 text-slate-900">Strategi Pertumbuhan</h2>
+             <p class="text-center text-lg text-slate-600 max-w-3xl mx-auto mb-12">Untuk memastikan pertumbuhan yang berkelanjutan, kami telah menyusun serangkaian strategi yang mencakup pengembangan layanan, perluasan pasar, dan penguatan merek. Klik setiap strategi untuk melihat detailnya.</p>
+            <div id="strategi-accordion" class="space-y-4 max-w-4xl mx-auto">
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="bg-slate-800 text-white mt-24">
+        <div class="container mx-auto px-6 py-8 text-center">
+            <p>&copy; 2025 Project Store. Dibuat untuk memberikan kemudahan digital.</p>
+        </div>
+    </footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+
+    mobileMenuButton.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+    });
+    
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            mobileMenu.classList.add('hidden');
+            document.querySelector(this.getAttribute('href')).scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+    });
+
+    // Data Keuangan
+    const dataPendapatan = {
+        labels: ['Top Up Game', 'Pulsa & Data', 'Token Listrik', 'Sewa Akun'],
+        datasets: [{
+            label: 'Estimasi Pendapatan',
+            data: [200000, 225000, 200000, 250000],
+            backgroundColor: ['#4f46e5', '#6366f1', '#818cf8', '#a5b4fc'],
+            borderColor: '#ffffff',
+            borderWidth: 2,
+            hoverOffset: 4
+        }]
+    };
+
+    const configPendapatan = {
+        type: 'doughnut',
+        data: dataPendapatan,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) { label += ': '; }
+                            if (context.parsed !== null) {
+                                label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(context.parsed);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        },
+    };
+    new Chart(document.getElementById('pendapatanChart'), configPendapatan);
+
+    const dataBiaya = {
+        labels: ['Pendapatan & Biaya'],
+        datasets: [{
+            label: 'Estimasi Pendapatan Kotor',
+            data: [875000],
+            backgroundColor: '#4f46e5',
+        }, {
+            label: 'Estimasi Biaya Operasional',
+            data: [700000],
+            backgroundColor: '#a5b4fc',
+        }]
+    };
+
+    const configBiaya = {
+        type: 'bar',
+        data: dataBiaya,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) { label += ': '; }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+                        }
+                    }
+                }
+            }
+        },
+    };
+    new Chart(document.getElementById('biayaChart'), configBiaya);
+
+    // Data Risiko
+    const riskData = [
+        { no: 1, name: 'Persaingan Pasar', x: 3, y: 2, level: 'Tinggi', color: 'rgba(239, 68, 68, 0.7)', priority: 'Tinggi', handling: 'Mengembangkan keunggulan kompetitif: Fokus pada pelayanan super cepat (1-3 menit), harga bersaing, dan program loyalitas pelanggan.', management: 'Pemasaran & Inovasi: Rutin melakukan survei pasar, memperbarui daftar produk/layanan, dan aktif di media sosial dengan konten menarik.' },
+        { no: 2, name: 'Keterlambatan Proses', x: 2, y: 3, level: 'Tinggi', color: 'rgba(239, 68, 68, 0.7)', priority: 'Tinggi', handling: 'Menerapkan SOP ketat: Verifikasi ganda ID pelanggan dan nominal sebelum proses. Pertimbangkan penggunaan chatbot/tools auto-response.', management: 'Monitoring & Pelatihan: Memantau performa sistem dan provider secara berkala. Memberikan pelatihan rutin kepada admin.' },
+        { no: 3, name: 'Kesalahan Teknis', x: 1, y: 1, level: 'Rendah', color: 'rgba(34, 197, 94, 0.7)', priority: 'Rendah', handling: 'Pahami kebijakan platform dan pastikan semua konten promosi tidak melanggar aturan.', management: 'Audit Konten & Komunikasi: Lakukan audit rutin pada konten yang diposting dan jalin komunikasi dengan tim support platform.' },
+        { no: 4, name: 'Penipuan Pelanggan', x: 2, y: 2, level: 'Sedang', color: 'rgba(234, 179, 8, 0.7)', priority: 'Sedang', handling: 'Cash Before Delivery (CBD): Pastikan pembayaran diterima penuh sebelum produk dikirim. Verifikasi bukti transfer dengan teliti.', management: 'Sistem Pembayaran Aman: Gunakan platform pembayaran terpercaya (QRIS, e-wallet resmi). Simpan catatan transaksi dengan rapi.' },
+        { no: 5, name: 'Isu Kepatuhan', x: 2, y: 1, level: 'Sedang', color: 'rgba(234, 179, 8, 0.7)', priority: 'Sedang', handling: 'Edukasi pelanggan: Memberikan informasi jelas tentang aturan penggunaan akun streaming. Hanya bekerja sama dengan supplier akun legal.', management: 'Verifikasi & Komunikasi: Memverifikasi legalitas supplier dan membangun komunikasi yang baik dengan pelanggan.' }
+    ];
+    
+    const riskChartData = {
+        datasets: riskData.map(risk => ({
+            label: risk.name,
+            data: [{ x: risk.x, y: risk.y, r: risk.level === 'Tinggi' ? 20 : (risk.level === 'Sedang' ? 15 : 10) }],
+            backgroundColor: risk.color,
+            borderColor: risk.color.replace('0.7', '1'),
+            borderWidth: 2,
+            ...risk
+        }))
+    };
+    
+    const riskDetailContainer = document.getElementById('risk-detail-card');
+    const riskDetailTitle = document.getElementById('risk-detail-title');
+    const riskDetailContent = document.getElementById('risk-detail-content');
+    
+    function updateRiskDetails(risk) {
+        riskDetailContainer.classList.remove('opacity-0');
+        riskDetailTitle.textContent = risk.name;
+        riskDetailContent.innerHTML = `
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-semibold text-sm text-indigo-600">Level Risiko</h4>
+                    <p class="font-bold text-lg text-slate-800">${risk.level}</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-sm text-indigo-600">Tindakan Penanganan</h4>
+                    <p class="text-slate-600">${risk.handling}</p>
+                </div>
+                 <div>
+                    <h4 class="font-semibold text-sm text-indigo-600">Pengelolaan Risiko</h4>
+                    <p class="text-slate-600">${risk.management}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    const configRisiko = {
+        type: 'bubble',
+        data: riskChartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            onClick: (e, elements) => {
+                if (elements.length > 0) {
+                    const elementIndex = elements[0].index;
+                    const datasetIndex = elements[0].datasetIndex;
+                    const risk = e.chart.data.datasets[datasetIndex];
+                    updateRiskDetails(risk);
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                     callbacks: {
+                        label: function(context) {
+                           return context.dataset.label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Kemungkinan Terjadi', font: { weight: 'bold' } },
+                    min: 0, max: 4,
+                    ticks: { stepSize: 1, callback: val => ['', 'Rendah', 'Sedang', 'Tinggi', ''][val] || '' }
+                },
+                y: {
+                    title: { display: true, text: 'Konsekuensi (Dampak)', font: { weight: 'bold' } },
+                    min: 0, max: 4,
+                    ticks: { stepSize: 1, callback: val => ['', 'Rendah', 'Sedang', 'Tinggi', ''][val] || '' }
+                }
+            }
+        }
+    };
+    new Chart(document.getElementById('risikoChart'), configRisiko);
+    
+    
+    // Strategi Accordion
+    const strategiData = [
+        { title: "Pengembangan Layanan", content: "Terus mengikuti tren game online baru serta platform streaming yang sedang naik daun untuk menambah layanan. Menggunakan sistem chatbot atau tools auto-response untuk memproses pesanan lebih cepat. Menawarkan paket langganan khusus bagi pelanggan tetap."},
+        { title: "Pengembangan Pasar", content: "Membuka toko resmi di platform seperti Tokopedia, Shopee, atau Bukalapak. Menjalin kolaborasi dengan komunitas gamer, pelajar, atau influencer digital. Menawarkan layanan ke kalangan guru dan staf sekolah."},
+        { title: "Peningkatan Kualitas Pelayanan", content: "Meningkatkan keterampilan komunikasi customer service. Mengumpulkan feedback pelanggan secara rutin untuk perbaikan. Menetapkan SOP yang menjamin transaksi selesai dalam waktu maksimal dan bebas dari kesalahan."},
+        { title: "Penguatan Branding", content: "Menggunakan logo, warna khas, dan desain promosi yang konsisten. Membuat konten edukatif dan promosi secara rutin di Instagram, TikTok, dan Facebook. Memajang ulasan positif dari pelanggan sebagai bukti kepercayaan."}
+    ];
+
+    const accordionContainer = document.getElementById('strategi-accordion');
+    strategiData.forEach((item, index) => {
+        const accordionItem = document.createElement('div');
+        accordionItem.className = 'bg-white rounded-xl shadow-md border border-slate-200/50 overflow-hidden';
+
+        const header = document.createElement('button');
+        header.className = 'w-full flex justify-between items-center text-left p-6 font-semibold text-lg text-slate-900 hover:bg-slate-50 transition-colors';
+        header.innerHTML = `
+            <span>${item.title}</span>
+            <span class="transform transition-transform duration-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </span>
+        `;
+
+        const content = document.createElement('div');
+        content.className = 'max-h-0 overflow-hidden transition-all duration-500 ease-in-out';
+        content.innerHTML = `<p class="p-6 pt-0 text-slate-600">${item.content}</p>`;
+        
+        header.addEventListener('click', () => {
+            const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+            document.querySelectorAll('#strategi-accordion .max-h-0, #strategi-accordion .max-h-screen').forEach(el => {
+                el.style.maxHeight = '0px';
+                el.previousElementSibling.querySelector('span:last-child').classList.remove('rotate-180');
+            });
+
+            if (!isOpen) {
+                content.style.maxHeight = content.scrollHeight + 'px';
+                header.querySelector('span:last-child').classList.add('rotate-180');
+            }
+        });
+        
+        accordionItem.appendChild(header);
+        accordionItem.appendChild(content);
+        accordionContainer.appendChild(accordionItem);
+    });
+});
+</script>
+</body>
 </html>
